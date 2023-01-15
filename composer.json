@@ -1,0 +1,11 @@
+{
+    "repositories": [
+        {
+            "url": "https://github.com/createwithrani/transistor-api.git",
+            "type": "git"
+        }
+    ],
+    "require": {
+        "createwithrani/transistor-api": "dev-main"
+    }
+}
