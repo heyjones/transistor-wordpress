@@ -69,6 +69,7 @@ function insert_term( $show ) {
         $show->attributes->title,
         'transistor-show',
         array(
+            'description' => $show->attributes->description,
             'slug' => $show->attributes->slug,
         )
     );
