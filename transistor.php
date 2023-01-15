@@ -21,3 +21,4 @@ require_once( 'vendor/autoload.php' );
 
 include_once( 'includes/episodes.php' );
 include_once( 'includes/settings.php' );
+include_once( 'includes/shows.php' );
