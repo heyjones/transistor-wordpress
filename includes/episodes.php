@@ -4,6 +4,7 @@ namespace transistor\episodes;
 
 add_action( 'init', __NAMESPACE__ . '\\init' );
 add_action( 'rest_api_init', __NAMESPACE__ . '\\rest_api_init' );
+add_filter( 'the_content', __NAMESPACE__ . '\\the_content' );
 
 function init() {
     register_post_type(
@@ -106,13 +107,14 @@ function episode_published( \WP_REST_Request $request ) {
         'post_type' => 'transistor-episode',
         'post_title' => $attributes->title,
         'post_excerpt' => $attributes->summary,
-        'post_content' => $attributes->description,
+        'post_content' => wpautop( $attributes->description ),
         'post_name' => sanitize_title( $attributes->title ),
         'post_status' => post_status( $attributes->status ),
         'post_date' => $attributes->created_at,
         'post_modified' => $attributes->updated_at,
         'meta_input' => array(
             '_id' => $id,
+            '_attributes' => $attributes,
         ),
         'tax_input' => array(
             'transistor-show' => $term_id,
@@ -151,4 +153,11 @@ function get_post_by_id( $episode_id ) {
     }
     $post = (array) $posts->posts[0];
     return $post;
+}
+
+function the_content( $content ) {
+    global $post;
+    $attributes = get_post_meta( $post->ID, '_attributes', true );
+    $content .= '<p>' . $attributes->embed_html . '</p>';
+    return $content;
 }
