@@ -92,36 +92,41 @@ function rest_api_init() {
 function episode_published( \WP_REST_Request $request ) {
     // Create the episode post
     $params = $request->get_params();
-    $data = (object) $params['data'];
-    $id = $data->id;
+    $data = $params['data'];
+    $id = $data['id'];
     // Check to make sure the episode doesn't already exist
     $post = get_post_by_id( $id );
     if( $post ) {
-        return $post;
+        wp_send_json( $post->ID );
     }
     // Get the show
-    $attributes = (object) $data->attributes;
-    $relationships = (object) $data->relationships;
-    $term_id = \transistor\shows\get_term_by_id( $relationships->show->data->id );
-    $post = wp_insert_post( array(
+    $post_id = wp_insert_post( array(
         'post_type' => 'transistor-episode',
-        'post_title' => $attributes->title,
-        'post_excerpt' => $attributes->summary,
-        'post_content' => wpautop( $attributes->description ),
-        'post_name' => sanitize_title( $attributes->title ),
-        'post_status' => post_status( $attributes->status ),
-        'post_date' => $attributes->created_at,
-        'post_modified' => $attributes->updated_at,
+        'post_title' => $data['attributes']['title'],
+        'post_excerpt' => $data['attributes']['summary'],
+        'post_content' => wpautop( $data['attributes']['description'] ),
+        'post_name' => sanitize_title( $data['attributes']['title'] ),
+        'post_status' => post_status( $data['attributes']['status'] ),
+        'post_date' => $data['attributes']['created_at'],
+        'post_modified' => $data['attributes']['updated_at'],
         'meta_input' => array(
             '_id' => $id,
-            '_attributes' => $attributes,
-        ),
-        'tax_input' => array(
-            'transistor-show' => $term_id,
+            '_attributes' => $data['attributes'],
         ),
     ) );
+    if( is_wp_error( $post_id ) ) {
+        wp_send_json( $post_id, 500 );
+    }
     // Assign the epsisode to the show
-    wp_send_json( $post );
+    $term = \transistor\shows\get_term_by_id( $data['relationships']['show']['data']['id'] );
+    if( $term ) {
+        wp_set_object_terms(
+            $post_id,
+            $term['term_id'],
+            'transistor-show'
+        );
+    }
+    wp_send_json( $post_id, 201 );
 }
 
 function post_status( $status ) {
@@ -151,13 +156,13 @@ function get_post_by_id( $episode_id ) {
     if( ! $posts->have_posts() ) {
         return false;
     }
-    $post = (array) $posts->posts[0];
+    $post = (object) $posts->posts[0];
     return $post;
 }
 
 function the_content( $content ) {
     global $post;
     $attributes = get_post_meta( $post->ID, '_attributes', true );
-    $content .= '<p>' . $attributes->embed_html . '</p>';
+    $content .= '<p>' . $attributes['embed_html'] . '</p>';
     return $content;
 }
