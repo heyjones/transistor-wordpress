@@ -104,7 +104,7 @@ function episode_published( \WP_REST_Request $request ) {
         'post_type' => 'transistor-episode',
         'post_title' => $data['attributes']['title'],
         'post_excerpt' => $data['attributes']['summary'],
-        'post_content' => wpautop( $data['attributes']['description'] ),
+        'post_content' => wpautop( make_clickable( $data['attributes']['description'] ) ),
         'post_name' => sanitize_title( $data['attributes']['title'] ),
         'post_status' => post_status( $data['attributes']['status'] ),
         'post_date' => $data['attributes']['created_at'],
