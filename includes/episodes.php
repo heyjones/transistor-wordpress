@@ -70,7 +70,7 @@ function init() {
             ),
             'has_archive' => true,
             'rewrite' => array(
-                'slug' => 'episode',
+                'slug' => 'episodes',
                 'with_front' => false,
                 'feeds' => false,
             ),
