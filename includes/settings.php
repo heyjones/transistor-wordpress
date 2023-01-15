@@ -104,7 +104,7 @@ function settings_field() {
 
 function settings_section_shows() {
     $transistor_api_key = get_option( 'transistor_api_key' );
-    $transistor_shows = get_option( 'transistor_shows' );
+    $transistor_shows = (array) get_option( 'transistor_shows' );
     $request = wp_remote_get(
         'https://api.transistor.fm/v1/shows',
         array(
@@ -140,7 +140,7 @@ function settings_section_shows() {
                 )
             ) );
             if( ! empty( $terms->terms ) ) {
-                $term = (object) $terms->terms[0];
+                $term = (array) $terms->terms[0];
             } else {
                 $term = wp_insert_term(
                     $show->attributes->title,
@@ -164,7 +164,7 @@ function settings_section_shows() {
                     );
                 }
             }
-            $episode_published = get_term_meta( $term, '_episode_published', true );
+            $episode_published = get_term_meta( $term['term_id'], '_episode_published', true );
             if( ! $episode_published ) {
                 $request = wp_remote_post(
                     'https://api.transistor.fm/v1/webhooks',
@@ -183,7 +183,7 @@ function settings_section_shows() {
                     $response = json_decode( wp_remote_retrieve_body( $request ) );
                     $webhook = $response->data;
                     add_term_meta(
-                        $term->term_id,
+                        $term['term_id'],
                         '_episode_published',
                         $webhook->id,
                         true
@@ -197,7 +197,7 @@ function settings_section_shows() {
         <label>
             <input type="checkbox" name="transistor_shows[]" value="<?php echo $show->id; ?>" <?php echo $checked ? 'checked' : ''; ?>>
             <?php echo $show->attributes->title; ?>
-        </label>
+        </label><br>
         <?php
 
     }
