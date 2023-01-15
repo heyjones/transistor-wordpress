@@ -3,14 +3,9 @@
 namespace transistor\episodes;
 
 add_action( 'init', __NAMESPACE__ . '\\init' );
+add_action( 'rest_api_init', __NAMESPACE__ . '\\rest_api_init' );
 
 function init() {
-
-    /**
-     * Post Types
-     * 
-     * /#Episode
-     */
     register_post_type(
         'transistor-episode',
         array(
@@ -63,13 +58,13 @@ function init() {
                 'custom-fields',
             ),
             'capabilities' => array(
-                'edit_post' => '', 
+                'edit_post' => 'edit_post', 
                 'read_post' => 'read_post', 
-                'delete_post' => '', 
+                'delete_post' => 'delete_post', 
                 'edit_posts' => 'edit_posts', 
-                'edit_others_posts' => '', 
+                'edit_others_posts' => 'edit_others_posts', 
                 'publish_posts' => '',       
-                'read_private_posts' => '', 
+                'read_private_posts' => 'read_private_posts', 
                 'create_posts' => '',
             ),
             'has_archive' => true,
@@ -80,40 +75,80 @@ function init() {
             ),
         )
     );
+}
 
-    /**
-     * Post Meta
-     */
-    register_post_meta(
-        'transistor-episode',
-        'duration',
+function rest_api_init() {
+    register_rest_route(
+        'transistor/v1',
+        '/episode_published/',
         array(
-            'type' => 'integer',
-            'description' => 'Duration of episode in seconds',
-            'single' => true,
+            'methods' => \WP_REST_Server::EDITABLE,
+            'callback' => __NAMESPACE__ . '\\episode_published',
         )
     );
+}
 
-    // Transcript
-    register_post_meta(
-        'transistor-episode',
-        'audio_url',
-        array(
-            'type' => 'string',
-            'description' => 'URL to an episode\'s new audio file',
-            'single' => true,
-        )
-    );
+function episode_published( \WP_REST_Request $request ) {
+    // Create the episode post
+    $params = $request->get_params();
+    $data = (object) $params['data'];
+    $id = $data->id;
+    // Check to make sure the episode doesn't already exist
+    $post = get_post_by_id( $id );
+    if( $post ) {
+        return $post;
+    }
+    // Get the show
+    $attributes = (object) $data->attributes;
+    $relationships = (object) $data->relationships;
+    $term_id = \transistor\shows\get_term_by_id( $relationships->show->data->id );
+    $post = wp_insert_post( array(
+        'post_type' => 'transistor-episode',
+        'post_title' => $attributes->title,
+        'post_excerpt' => $attributes->summary,
+        'post_content' => $attributes->description,
+        'post_name' => sanitize_title( $attributes->title ),
+        'post_status' => post_status( $attributes->status ),
+        'post_date' => $attributes->created_at,
+        'post_modified' => $attributes->updated_at,
+        'meta_input' => array(
+            '_id' => $id,
+        ),
+        'tax_input' => array(
+            'transistor-show' => $term_id,
+        ),
+    ) );
+    // Assign the epsisode to the show
+    wp_send_json( $post );
+}
 
-    // Transcript
-    register_post_meta(
-        'transistor-episode',
-        'transcript',
-        array(
-            'type' => 'string',
-            'description' => 'Full text of the episode transcript',
-            'single' => true,
-        )
-    );
+function post_status( $status ) {
+    switch( $status ) {
+        case 'published':
+            $status = 'publish';
+            break;
+        default:
+            $status = 'draft';
+    }
+    return $status;
+}
 
+function get_post_by_id( $episode_id ) {
+    $posts = new \WP_Query( array(
+        'post_type' => 'transistor-episode',
+        'posts_per_page' => 1,
+        'meta_query' => array(
+            array(
+                'key' => '_id',
+                'compare' => '=',
+                'value' => $episode_id,
+                'type' => 'NUMERIC',
+            ),
+        ),
+    ) );
+    if( ! $posts->have_posts() ) {
+        return false;
+    }
+    $post = (array) $posts->posts[0];
+    return $post;
 }

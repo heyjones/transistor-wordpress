@@ -126,71 +126,8 @@ function settings_section_shows() {
     foreach( (array) $shows as $show ) {
         $checked = in_array( $show->id, $transistor_shows );
         if( $checked ) {
-            $terms = new \WP_Term_Query( array(
-                'taxonomy' => 'transistor-show',
-                'number' => 1,
-                'hide_empty' => false,
-                'meta_query' => array(
-                    array(
-                        'key' => '_id',
-                        'compare' => '=',
-                        'value' => $show->id,
-                        'type' => 'NUMERIC',
-                    )
-                )
-            ) );
-            if( ! empty( $terms->terms ) ) {
-                $term = (array) $terms->terms[0];
-            } else {
-                $term = wp_insert_term(
-                    $show->attributes->title,
-                    'transistor-show',
-                    array(
-                        'slug' => $show->attributes->slug,
-                    )
-                );
-                if( ! is_wp_error( $term ) ) {
-                    add_term_meta(
-                        $term['term_id'],
-                        '_id',
-                        $show->id,
-                        true
-                    );
-                    add_term_meta(
-                        $term['term_id'],
-                        '_attributes',
-                        $show->attributes,
-                        true
-                    );
-                }
-            }
-            $episode_published = get_term_meta( $term['term_id'], '_episode_published', true );
-            if( ! $episode_published ) {
-                $request = wp_remote_post(
-                    'https://api.transistor.fm/v1/webhooks',
-                    array(
-                        'headers' => array(
-                            'x-api-key' => $transistor_api_key,
-                        ),
-                        'body' => array(
-                            'event_name' => 'episode_published',
-                            'show_id' => $show->id,
-                            'url' => get_rest_url( null, '/transistor/v1/episode_published/' ),
-                        ),
-                    )
-                );
-                if( ! is_wp_error( $request ) || 200 === wp_remote_retrieve_response_code( $request ) ) {
-                    $response = json_decode( wp_remote_retrieve_body( $request ) );
-                    $webhook = $response->data;
-                    add_term_meta(
-                        $term['term_id'],
-                        '_episode_published',
-                        $webhook->id,
-                        true
-                    );
-                }
-            }
-            
+            $term = \transistor\shows\get_term( $show );
+            $webhook = \transistor\shows\get_webhook( 'episode_published', $show->id );
         }
 
         ?>
