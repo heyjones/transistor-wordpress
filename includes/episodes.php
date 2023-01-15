@@ -62,11 +62,22 @@ function init() {
                 'author', // author
                 'custom-fields',
             ),
-            'taxonomies' => array(
-                'transistor-show',
-                'transistor-keywords',
-                'transistor-type',
-            )
+            'capabilities' => array(
+                'edit_post' => '', 
+                'read_post' => 'read_post', 
+                'delete_post' => '', 
+                'edit_posts' => 'edit_posts', 
+                'edit_others_posts' => '', 
+                'publish_posts' => '',       
+                'read_private_posts' => '', 
+                'create_posts' => '',
+            ),
+            'has_archive' => true,
+            'rewrite' => array(
+                'slug' => 'episode',
+                'with_front' => false,
+                'feeds' => false,
+            ),
         )
     );
 
